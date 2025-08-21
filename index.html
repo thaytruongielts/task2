@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bài tập Tiếng Anh</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f0f2f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #0056b3;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .quiz-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .quiz-header h2 {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .question-list {
+            margin-top: 20px;
+        }
+        .question-item {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+        }
+        .question-item:last-child {
+            border-bottom: none;
+        }
+        .question-item p {
+            margin: 0 0 10px;
+        }
+        .question-item p.vi-question {
+            font-weight: bold;
+            font-style: italic;
+            color: #555;
+        }
+        .answer-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .answer-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .answer-input:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        .answer-input.correct {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        .answer-input.incorrect {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        .check-button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.9em;
+            cursor: pointer;
+            color: white;
+            background-color: #007bff;
+            transition: background-color 0.3s;
+        }
+        .check-button:hover {
+            background-color: #0056b3;
+        }
+        .correct-answer-text {
+            color: #28a745;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: none;
+        }
+        .results-box {
+            text-align: center;
+            margin-top: 30px;
+            background-color: #eaf5ff;
+            border: 1px solid #cce5ff;
+            padding: 20px;
+            border-radius: 8px;
+            display: none;
+        }
+        .topic-text {
+            font-weight: bold;
+            font-size: 1.2em;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Bài tập Từ Vựng</h1>
+    <div id="quiz-container">
+    </div>
+    
+    <div class="new-quiz-button-container">
+        <button id="new-quiz-button">Bài Mới</button>
+    </div>
+
+    <div id="results-box" class="results-box">
+        <h3>Kết quả:</h3>
+        <p>Bạn đã trả lời đúng <span id="correct-count">0</span> / <span id="total-questions">9</span> câu.</p>
+    </div>
+</div>
+
+<script>
+    // Dán URL Apps Script đã triển khai của bạn vào đây
+    const webAppUrl = 'https://script.google.com/macros/s/AKfycbyigkhk-C1nfpNHtPXlfzSR6ulW59KHkenIpeX-3dCv-Sn9hCqor5M9rO8UWCWU9eYkIw/exec'; 
+    
+    const quizContainer = document.getElementById('quiz-container');
+    const newQuizButton = document.getElementById('new-quiz-button');
+    const resultsBox = document.getElementById('results-box');
+    const correctCountSpan = document.getElementById('correct-count');
+    const totalQuestionsSpan = document.getElementById('total-questions');
+
+    let currentQuestionsData = null;
+    let correctCount = 0;
+    const totalQuestions = 9;
+
+    async function fetchQuestions() {
+        quizContainer.innerHTML = '<p style="text-align: center;">Đang tải câu hỏi...</p>';
+        newQuizButton.style.display = 'none';
+        resultsBox.style.display = 'none';
+        correctCount = 0;
+        correctCountSpan.textContent = 0;
+
+        try {
+            const response = await fetch(webAppUrl);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            currentQuestionsData = await response.json();
+            totalQuestionsSpan.textContent = totalQuestions;
+            renderQuiz();
+            newQuizButton.style.display = 'block';
+        } catch (error) {
+            console.error('Lỗi khi tải câu hỏi:', error);
+            quizContainer.innerHTML = `<p style="color: red; text-align: center;">Lỗi: ${error.message}. Vui lòng kiểm tra lại URL Apps Script hoặc quyền truy cập.</p>`;
+            newQuizButton.style.display = 'block';
+        }
+    }
+
+    function renderQuiz() {
+        quizContainer.innerHTML = `
+            <div class="topic-text">${currentQuestionsData.topic}</div>
+            <div class="question-list">
+                ${currentQuestionsData.questions.map((q, index) => `
+                    <div class="question-item">
+                        <p class="vi-question">(${q.vi})</p>
+                        <div class="answer-area">
+                            <input type="text" class="answer-input" data-question-index="${index}" placeholder="Nhập câu trả lời...">
+                            <button class="check-button" onclick="checkSingleAnswer(this, ${index})">Nộp bài</button>
+                        </div>
+                        <div class="correct-answer-text">Đáp án đúng: <span>${q.en}</span></div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    function checkSingleAnswer(button, index) {
+        const itemContainer = button.closest('.question-item');
+        const input = itemContainer.querySelector('.answer-input');
+        const correctAnswerTextEl = itemContainer.querySelector('.correct-answer-text');
+
+        const userAnswer = input.value.trim().toLowerCase();
+        const correctAnswer = currentQuestionsData.questions[index].en.trim().toLowerCase();
+
+        input.disabled = true;
+        button.disabled = true;
+
+        if (userAnswer === correctAnswer) {
+            input.classList.add('correct');
+            correctAnswerTextEl.style.display = 'block';
+            correctAnswerTextEl.querySelector('span').textContent = 'Chính xác!';
+            correctAnswerTextEl.style.color = '#28a745';
+            correctCount++;
+        } else {
+            input.classList.add('incorrect');
+            correctAnswerTextEl.style.display = 'block';
+            correctAnswerTextEl.querySelector('span').textContent = currentQuestionsData.questions[index].en;
+            correctAnswerTextEl.style.color = '#dc3545';
+        }
+
+        correctCountSpan.textContent = correctCount;
+
+        // Check if all questions are answered to show final result
+        const answeredCount = document.querySelectorAll('.answer-input[disabled]').length;
+        if (answeredCount === totalQuestions) {
+            resultsBox.style.display = 'block';
+        }
+    }
+
+    newQuizButton.addEventListener('click', fetchQuestions);
+
+    // Tải câu hỏi lần đầu khi trang được mở
+    fetchQuestions();
+</script>
+
+</body>
+</html>
